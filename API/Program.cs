@@ -1,3 +1,4 @@
+using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -5,11 +6,15 @@ namespace API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
+            builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             builder.Services.AddDbContext<StoreContext>(opt =>
             {
@@ -20,28 +25,22 @@ namespace API
 
             var app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
+            try
             {
-                var context = scope.ServiceProvider.GetRequiredService<StoreContext>();
+                using (var scope = app.Services.CreateScope())
+                {
+                    var service = scope.ServiceProvider;
+                    var context = service.GetRequiredService<StoreContext>();
+                    var logger = service.GetRequiredService<ILogger<StoreContextSeed>>();
 
-                // Attempt to run a query to check the connection
-                try
-                {
-                    // This is a basic query that checks if the connection works
-                    var canConnect = context.Database.CanConnect();
-                    if (canConnect)
-                    {
-                        Console.WriteLine("Successfully connected to the database.");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Failed to connect to the database.");
-                    }
+                    await StoreContextSeed.CheckDatabaseConnection(context, logger);
+                    await context.Database.MigrateAsync();
+                    await StoreContextSeed.SeedAsync(context, logger);
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"An error occurred while trying to connect to the database: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
 
             app.MapControllers();
