@@ -29,6 +29,8 @@ namespace Core.Interfaces
 
         Task<bool> SaveAllAsync();
 
+        Task<int> CountAsync(ISpecification<T> specification);
+
         bool Exist(int id);
     }
 }
