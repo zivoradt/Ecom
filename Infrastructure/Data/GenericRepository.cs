@@ -1,11 +1,6 @@
 ﻿using Core.Entites;
 using Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Data
 {
@@ -14,6 +9,15 @@ namespace Infrastructure.Data
         public void Add(T entity)
         {
             storeContext.Set<T>().Add(entity);
+        }
+
+        public async Task<int> CountAsync(ISpecification<T> specification)
+        {
+            var query = storeContext.Set<T>().AsQueryable();
+
+            query = specification.ApplyCriteria(query);
+
+            return await query.CountAsync();
         }
 
         public bool Exist(int id)
@@ -72,7 +76,7 @@ namespace Infrastructure.Data
             return SpecificationEvaluator<T>.GetQuery(storeContext.Set<T>().AsQueryable(), specification);
         }
 
-        private IQueryable<TResult> ApplySpecification<TResult>(ISpecification<T, TResult?> specification)
+        private IQueryable<TResult> ApplySpecification<TResult>(ISpecification<T, TResult> specification)
         {
             return SpecificationEvaluator<T>.GetQuery<T, TResult>(storeContext.Set<T>().AsQueryable(), specification);
         }
