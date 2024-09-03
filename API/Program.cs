@@ -1,10 +1,11 @@
+using API.Middleware;
 using Core.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace API
 {
-    public class Program
+    public static class Program
     {
         public static async Task Main(string[] args)
         {
@@ -22,6 +23,7 @@ namespace API
             });
 
             builder.Services.AddControllers();
+            builder.Services.AddCors();
 
             var app = builder.Build();
 
@@ -42,6 +44,11 @@ namespace API
             {
                 Console.WriteLine(ex.Message);
             }
+
+            app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod()
+            .WithOrigins("http://localhost:4200", "https://localhost:4200"));
+
+            app.UseMiddleware<ExceptionMiddleware>();
 
             app.MapControllers();
 
